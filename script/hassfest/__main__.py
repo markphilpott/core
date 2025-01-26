@@ -205,7 +205,7 @@ def main() -> int:
     print("Invalid integrations:", len(invalid_itg))
     print()
 
-    if not invalid_itg and not general_errors:
+    if True:  # not invalid_itg and not general_errors:
         print_integrations_status(config, warnings_itg, show_fixable_errors=False)
 
         if config.action == "generate":

@@ -1,0 +1,14 @@
+{
+  "domain": "lyngdorf",
+  "name": "lyngdorf_simple",
+  "version": "0.1.0",
+  "codeowners": ["@markphilpott"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://www.home-assistant.io/integrations/lyngdorfxxx",
+  "homekit": {},
+  "iot_class": "local_polling",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": []
+}

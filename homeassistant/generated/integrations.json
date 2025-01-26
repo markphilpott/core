@@ -3556,6 +3556,12 @@
       "config_flow": false,
       "iot_class": "local_polling"
     },
+    "lyngdorf": {
+      "name": "lyngdorf_simple",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "local_polling"
+    },
     "madeco": {
       "name": "Madeco",
       "integration_type": "virtual",
