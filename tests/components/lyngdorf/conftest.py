@@ -1,4 +1,4 @@
-"""Common fixtures for the lyngdorf_simple tests."""
+"""Common fixtures for the lyngdorf tests."""
 
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch

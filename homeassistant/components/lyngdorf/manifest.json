@@ -1,6 +1,6 @@
 {
   "domain": "lyngdorf",
-  "name": "lyngdorf_simple",
+  "name": "lyngdorf",
   "version": "0.1.0",
   "codeowners": ["@markphilpott"],
   "config_flow": true,
@@ -10,5 +10,6 @@
   "iot_class": "local_polling",
   "requirements": [],
   "ssdp": [],
-  "zeroconf": []
+  "zeroconf": [],
+  "integration_type": "device"
 }

@@ -1,1 +1,1 @@
-"""Tests for the lyngdorf_simple integration."""
+"""Tests for the lyngdorf integration."""
