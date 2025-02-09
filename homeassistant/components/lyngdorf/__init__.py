@@ -1,38 +1,40 @@
-"""The lyngdorf integration."""
-
-from __future__ import annotations
-
-import logging
+"""The Lyngdorf Processor component."""
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 
-# List the platforms that you want to support.
-# For your initial PR, limit it to 1 platform.
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+from .coordinator import LyngdorfDataUpdateCoordinator
+from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP
 
-# TD Create ConfigEntry type alias with API object
-# TD Rename type alias and update all entry annotations
-# type New_NameConfigEntry = ConfigEntry[MyApi]
+PLATFORMS = [Platform.SENSOR]
 
-_LOGGER = logging.getLogger(__name__)
-DOMAIN = "lyngdorf"
+type LyngdorfConfigEntry = ConfigEntry[LyngdorfDataUpdateCoordinator]
 
 
-def setup(hass: HomeAssistant, config: ConfigEntry) -> bool:
-    """Lyngdorf Setup."""
+async def async_setup_entry(hass: HomeAssistant, entry: LyngdorfConfigEntry) -> bool:
+    """Set up Lyngdorf Processor from a config entry."""
+    name = entry.data[CONF_NAME]
+    host = entry.data[CONF_HOST]
+    port = entry.data[CONF_PORT]
+
+    try:
+        lyngdorf_mp = LyngdorfMP(name, host, port)
+        lyngdorf_mp.connect()
+    except Exception as error:
+        raise ConfigEntryNotReady from error
+
+    coordinator = LyngdorfDataUpdateCoordinator(hass, lyngdorf_mp)
+    await coordinator.async_config_entry_first_refresh()
+
+    entry.runtime_data = coordinator
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
     return True
 
 
-# TD Update entry annotation
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up lyngdorf from a config entry."""
-
-    return True
-
-
-# TD Update entry annotation
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: LyngdorfConfigEntry) -> bool:
     """Unload a config entry."""
-    return True
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

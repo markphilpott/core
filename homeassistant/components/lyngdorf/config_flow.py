@@ -7,10 +7,11 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
-from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.helpers import config_validation as cv
 
-from .const import DEFAULT_TCP_PORT, DOMAIN
+from .const import CONF_LYNDORF, DEFAULT_PORT, DOMAIN
+from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,7 +21,6 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # The schema version of the entries that it creates
     # Home Assistant will call your migrate method if the version changes
-    _LOGGER.info("IN FLOW")
     VERSION = 1
     MINOR_VERSION = 1
 
@@ -33,15 +33,22 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         settings_schema = vol.Schema(
             {
+                vol.Required(CONF_NAME, default="Cinema Shed LyngdorfA"): cv.string,
                 vol.Required(CONF_HOST, default="192.168.1.71"): cv.string,
-                vol.Optional(CONF_PORT, default=DEFAULT_TCP_PORT): cv.port,
+                vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
             }
         )
 
         if user_input is None:
             return self.async_show_form(step_id="init", data_schema=settings_schema)
 
-        return self.async_create_entry(title="", data=user_input)
+        lyngdorf_mp = LyngdorfMP(
+            name=user_input[CONF_NAME],
+            ip_address=user_input[CONF_HOST],
+            port=user_input[CONF_PORT],
+        )
+
+        return self.async_create_entry(title="", data={CONF_LYNDORF: lyngdorf_mp})
 
     async def async_step_init(
         self, user_input: dict[str, str] | None = None
@@ -54,8 +61,9 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_NAME, default="Cinema Shed LyngdorfB"): cv.string,
                     vol.Required(CONF_HOST): cv.string,
-                    vol.Optional(CONF_PORT, default=DEFAULT_TCP_PORT): cv.port,
+                    vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
                 }
             ),
         )

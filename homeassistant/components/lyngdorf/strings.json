@@ -17,5 +17,22 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
+  },
+  "entity": {
+    "sensor": {
+      "power_status": {
+        "name": "Power Status"
+      },
+      "volume": {
+        "name": "Volume",
+        "unit_of_measurement": "dBA"
+      },
+      "source": {
+        "name": "Current Source"
+      },
+      "mute_status": {
+        "name": "Mute Status"
+      }
+    }
   }
 }

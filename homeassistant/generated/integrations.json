@@ -3558,7 +3558,7 @@
     },
     "lyngdorf": {
       "name": "lyngdorf",
-      "integration_type": "device",
+      "integration_type": "hub",
       "config_flow": true,
       "iot_class": "local_polling"
     },

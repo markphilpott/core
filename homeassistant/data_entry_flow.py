@@ -300,9 +300,12 @@ class FlowManager(abc.ABC, Generic[_FlowContextT, _FlowResultT, _HandlerT]):
         data: Any = None,
     ) -> _FlowResultT:
         """Start a data entry flow."""
+        _LOGGER.warning("F")
         if context is None:
             context = cast(_FlowContextT, {})
+        _LOGGER.warning("A")
         flow = await self.async_create_flow(handler, context=context, data=data)
+        _LOGGER.warning("B")
         if not flow:
             raise UnknownFlow("Flow was not created")
         flow.hass = self.hass
