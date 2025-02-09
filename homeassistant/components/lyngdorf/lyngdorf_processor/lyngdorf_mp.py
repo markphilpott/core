@@ -2,7 +2,7 @@
 
 import logging
 import re
-from socket import socket
+import socket
 
 from .lyngdorf_sensors import LyngdorfSensors
 
@@ -27,12 +27,12 @@ class LyngdorfMP:
         self.port = port
 
     def _get_socket(self):
-        s = socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.ip_address, self.port))
         return s
 
     @staticmethod
-    def _send_command(command: str, s: socket):
+    def _send_command(command: str, s: socket.socket):
         if not command.startswith("!"):
             command = "!" + command
 
@@ -45,7 +45,7 @@ class LyngdorfMP:
         s.send(encoded_command)
 
     @staticmethod
-    def _get_response(s: socket):
+    def _get_response(s: socket.socket):
         response = s.recv(1024).decode("utf-8").rstrip()
         _LOGGER.info("Received response %s", response)
         return response
@@ -63,10 +63,15 @@ class LyngdorfMP:
         response = self._command_with_response(command)
         return int(re.findall(r"-?\d+", response)[0])
 
-    def _get_text_parameter_response(self, command):
+    def _get_quoted_text_parameter_response(self, command):
         """For response of the form '!SRC(4)"DVD"' return 'DVD'."""
         response = self._command_with_response(command)
         return re.search(r"\"(.+)\"", response).group(1)
+
+    def _get_round_bracket_text_parameter_response(self, command):
+        """For response of the form '!SRC(DEVICE NAME) return 'DEVICE NAME'."""
+        response = self._command_with_response(command)
+        return re.search(r"\((.+)\)", response).group(1)
 
     def _get_text_response(self, command):
         return self._command_with_response(command)
@@ -106,11 +111,11 @@ class LyngdorfMP:
     def get_current_source_name(self) -> str:
         """Get current source name."""
         current_source_id = self.get_current_source_id()
-        return self._get_text_parameter_response(f"!SRC({current_source_id})?")
+        return self._get_quoted_text_parameter_response(f"!SRC({current_source_id})?")
 
     def get_device_name(self) -> str:
         """Get device name."""
-        return self._get_text_response("!DEVICE?")
+        return self._get_round_bracket_text_parameter_response("!DEVICE?")
 
     def connect(self) -> None:
         """Connect to processor."""
