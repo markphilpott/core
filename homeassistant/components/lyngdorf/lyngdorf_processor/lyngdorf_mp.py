@@ -76,7 +76,7 @@ class LyngdorfMP:
     def _get_text_response(self, command):
         return self._command_with_response(command)
 
-    def get_power_status(self):
+    def get_power_status(self) -> str:
         """Get power state of processor."""
         response = self._get_numeric_parameter_response("POWER?")
         if response == 0:
@@ -84,6 +84,18 @@ class LyngdorfMP:
         if response == 1:
             return "ON"
         return "UNKNOWN POWER STATE"
+
+    def turn_on(self) -> None:
+        """Turn on processor."""
+        self._command_without_response("POWERONMAIN")
+
+    def turn_off(self) -> None:
+        """Turn off processor."""
+        self._command_without_response("POWEROFFMAIN")
+
+    def is_on(self) -> bool:
+        """Whether the processor is currently on."""
+        return self.get_power_status() == "ON"
 
     def get_is_mute(self):
         """Get mute status - 'ON' or 'OFF'."""
