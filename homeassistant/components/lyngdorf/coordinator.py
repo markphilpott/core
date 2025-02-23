@@ -15,9 +15,9 @@ _LOGGER = logging.getLogger(__name__)
 class LyngdorfDataUpdateCoordinator(DataUpdateCoordinator[LyngdorfSensors]):
     """Class to manage fetching data from Lyngdorf Processor."""
 
-    def __init__(self, hass: HomeAssistant, lyngdorf: LyngdorfMP) -> None:
+    def __init__(self, hass: HomeAssistant, lyngdorf_processor: LyngdorfMP) -> None:
         """Initialize."""
-        self.lyngdorf = lyngdorf
+        self.lyngdorf_processor = lyngdorf_processor
 
         super().__init__(
             hass,
@@ -29,6 +29,6 @@ class LyngdorfDataUpdateCoordinator(DataUpdateCoordinator[LyngdorfSensors]):
     async def _async_update_data(self) -> LyngdorfSensors:
         """Update data via library."""
         try:
-            return self.lyngdorf.async_update()
+            return self.lyngdorf_processor.get_state()
         except Exception as error:
             raise UpdateFailed(error) from error

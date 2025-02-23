@@ -8,7 +8,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from .coordinator import LyngdorfDataUpdateCoordinator
 from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP
 
-PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.MEDIA_PLAYER]
 
 type LyngdorfConfigEntry = ConfigEntry[LyngdorfDataUpdateCoordinator]
 

@@ -16,7 +16,7 @@ from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP
 _LOGGER = logging.getLogger(__name__)
 
 
-class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class LyngdordConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Example config flow."""
 
     # The schema version of the entries that it creates
@@ -33,7 +33,9 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         settings_schema = vol.Schema(
             {
-                vol.Required(CONF_NAME, default="Cinema Shed LyngdorfA"): cv.string,
+                vol.Required(
+                    CONF_NAME, default="Cinema Shed Lyngdorf Media Player"
+                ): cv.string,
                 vol.Required(CONF_HOST, default="192.168.1.71"): cv.string,
                 vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
             }
