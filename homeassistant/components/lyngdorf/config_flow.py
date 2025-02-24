@@ -11,7 +11,7 @@ from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.helpers import config_validation as cv
 
 from .const import CONF_LYNDORF, DEFAULT_PORT, DOMAIN
-from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP
+from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP, LyngdorfMPRawInterface
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,9 +45,10 @@ class LyngdordConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(step_id="init", data_schema=settings_schema)
 
         lyngdorf_mp = LyngdorfMP(
-            name=user_input[CONF_NAME],
-            ip_address=user_input[CONF_HOST],
-            port=user_input[CONF_PORT],
+            user_input[CONF_NAME],
+            LyngdorfMPRawInterface(
+                ip_address=user_input[CONF_HOST], port=user_input[CONF_PORT]
+            ),
         )
 
         return self.async_create_entry(title="", data={CONF_LYNDORF: lyngdorf_mp})

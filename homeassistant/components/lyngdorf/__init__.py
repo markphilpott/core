@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .coordinator import LyngdorfDataUpdateCoordinator
-from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP
+from .lyngdorf_processor.lyngdorf_mp import LyngdorfMP, LyngdorfMPRawInterface
 
 PLATFORMS = [Platform.MEDIA_PLAYER]
 
@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LyngdorfConfigEntry) -> 
     port = entry.data[CONF_PORT]
 
     try:
-        lyngdorf_mp = LyngdorfMP(name, host, port)
+        lyngdorf_mp = LyngdorfMP(name, LyngdorfMPRawInterface(host, port))
         lyngdorf_mp.connect()
     except Exception as error:
         raise ConfigEntryNotReady from error

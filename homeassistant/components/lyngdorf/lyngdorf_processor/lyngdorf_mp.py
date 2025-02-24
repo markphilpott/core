@@ -1,10 +1,8 @@
 """Type represenging a Lyngdorf MP40 or MP60 processor."""
 
 import logging
-import re
-import socket
-import threading
 
+from .lyngdorf_mp_raw_interface import LyngdorfMPRawInterface
 from .lyngdorf_sensors import LyngdorfSensors
 
 logging.basicConfig(format="%(threadName)s:%(message)s")
@@ -22,87 +20,30 @@ class HostUnreachable(Exception):
 class LyngdorfMP:
     """Class to interact with LyngdorfMP amp."""
 
-    def __init__(self, name: str, ip_address: str, port: int) -> None:
+    def __init__(
+        self, name: str, processor_raw_interface: LyngdorfMPRawInterface
+    ) -> None:
         """Store the specifics of the Lyngdorf."""
         self.name = name
-        self.ip_address = ip_address
-        self.port = port
-        # Only make one call to the processor at at time
-        self._processor_lock = threading.Lock()
-        self._processor_socket = self._get_socket()
-
-    def _send_command(self, command: str):
-        if not command.startswith("!"):
-            command = "!" + command
-
-        _LOGGER.info("Sending command '%s'", command)
-
-        if not command.endswith("\r"):
-            command = command + "\r"
-
-        encoded_command = command.encode("utf-8")
-        self._processor_socket.send(encoded_command)
-
-    def _get_response(self):
-        response = self._processor_socket.recv(1024).decode("utf-8").rstrip()
-        _LOGGER.info("Received response '%s'", response)
-        return response
-
-    def _get_socket(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((self.ip_address, self.port))
-        return s
-
-    def _command_with_response(self, command: str) -> str:
-        with self._processor_lock:
-            self._send_command(command)
-            return self._get_response()
-
-    def _command_without_response(self, command):
-        with self._processor_lock:
-            self._send_command(command)
-
-    def _get_numeric_parameter_response(self, command):
-        response = self._command_with_response(command)
-        return int(re.findall(r"-?\d+", response)[0])
-
-    def _get_quoted_text_parameter_response(self, command):
-        """For response of the form '!SRC(4)"DVD"' return 'DVD'."""
-        response = self._command_with_response(command)
-        return re.search(r"\"(.+)\"", response).group(1)
-
-    def _get_round_bracket_text_parameter_response(self, command):
-        """For response of the form '!SRC(DEVICE NAME) return 'DEVICE NAME'."""
-        response = self._command_with_response(command)
-        return re.search(r"\((.+)\)", response).group(1)
-
-    def _get_text_response(self, command):
-        return self._command_with_response(command)
-
-    def get_power_status(self) -> str:
-        """Get power state of processor."""
-        response = self._get_numeric_parameter_response("POWER?")
-        if response == 0:
-            return "STANDBY"
-        if response == 1:
-            return "ON"
-        return "UNKNOWN POWER STATE"
+        self.processor_raw_interface = processor_raw_interface
 
     def turn_on(self) -> None:
         """Turn on processor."""
-        self._command_without_response("POWERONMAIN")
+        self.processor_raw_interface.command_without_response("POWERONMAIN")
 
     def turn_off(self) -> None:
         """Turn off processor."""
-        self._command_without_response("POWEROFFMAIN")
+        self.processor_raw_interface.command_without_response("POWEROFFMAIN")
 
     def is_on(self) -> bool:
         """Whether the processor is currently on."""
-        return self.get_power_status() == "ON"
+        return (
+            self.processor_raw_interface.get_numeric_parameter_response("POWER?") == 1
+        )
 
     def get_is_mute(self) -> bool:
         """Get mute status - 'ON' or 'OFF'."""
-        response = self._get_text_response("!MUTE?")
+        response = self.processor_raw_interface.get_text_response("!MUTE?")
         if response == "!MUTEON":
             return True
         return False
@@ -110,29 +51,29 @@ class LyngdorfMP:
     def mute(self, mute: bool) -> None:
         """Set mute state."""
         command = "MUTEON" if mute else "MUTEOFF"
-        self._command_without_response(command=command)
+        self.processor_raw_interface.command_without_response(command=command)
 
     def unmute(self) -> None:
         """Engage mute."""
-        self._command_without_response("MUTEOFF")
+        self.processor_raw_interface.command_without_response("MUTEOFF")
 
     def test_ping(self):
         """Send a ping and check the response."""
-        ping_response = self._get_text_response("PING?")
+        ping_response = self.processor_raw_interface.get_text_response("PING?")
         _LOGGER.info("Equal?? %s", ping_response == "!PONG")
         return ping_response
 
     def get_decibels(self) -> int:
         """Get current decibels."""
-        return self._get_numeric_parameter_response("!VOL?")
+        return self.processor_raw_interface.get_numeric_parameter_response("!VOL?")
 
     def set_decibels(self, decibels: int) -> None:
         """Set decibels."""
-        self._command_without_response(f"!VOL({decibels})")
+        self.processor_raw_interface.command_without_response(f"!VOL({decibels})")
 
     def get_current_source_id(self) -> int:
         """Get current source id."""
-        return self._get_numeric_parameter_response("!SRC?")
+        return self.processor_raw_interface.get_numeric_parameter_response("!SRC?")
 
     def get_current_source_name(self) -> str:
         """Get current source name."""
@@ -140,31 +81,37 @@ class LyngdorfMP:
 
     def _get_source_name(self, source_id) -> str:
         """Get name of given source."""
-        return self._get_quoted_text_parameter_response(f"!SRC({source_id})?")
+        return self.processor_raw_interface.get_quoted_text_parameter_response(
+            f"!SRC({source_id})?"
+        )
 
     def select_source(self, source_name: str) -> None:
         """Select source given the name."""
         source_index = self.get_available_source_names().index(source_name)
         _LOGGER.info("Source %s has index %d", source_name, source_index)
-        self._command_without_response(f"!SRC({source_index})")
+        self.processor_raw_interface.command_without_response(f"!SRC({source_index})")
 
     def play_pause(self) -> None:
         """Press Play button."""
-        self._command_without_response("!PLAY")
+        self.processor_raw_interface.command_without_response("!PLAY")
 
     def next(self) -> None:
         """Press Next button."""
-        self._command_without_response("!NEXT")
+        self.processor_raw_interface.command_without_response("!NEXT")
 
     def previous(self) -> None:
         """Press Previous button."""
-        self._command_without_response("!PREV")
+        self.processor_raw_interface.command_without_response("!PREV")
 
     def get_available_source_names(self) -> list[str]:
         """Get list of available sources."""
         # '!SRC(0)"SHIELD"\r!SRC(1)"PC"\r!SRC(2)"NOW TV"\r!SRC(3)"MUSIC"'
-        number_of_available_sources = self._get_numeric_parameter_response("!SRCS?")
-        sources_string = self._get_response()
+        number_of_available_sources = (
+            self.processor_raw_interface.get_numeric_parameter_response("!SRCS?")
+        )
+        # Command !SRCS? has two responses - first the count of sources, then the list of sources.
+        # This means we must call 'get response' twice.
+        sources_string = self.processor_raw_interface.get_text_response(None)
         _LOGGER.info("Sources text list '%s'", sources_string)
         available_sources = sources_string.split('"')[1::2]
         _LOGGER.info(
@@ -177,7 +124,9 @@ class LyngdorfMP:
 
     def get_device_name(self) -> str:
         """Get device name."""
-        return self._get_round_bracket_text_parameter_response("!DEVICE?")
+        return self.processor_raw_interface.get_round_bracket_text_parameter_response(
+            "!DEVICE?"
+        )
 
     def connect(self) -> None:
         """Connect to processor."""
