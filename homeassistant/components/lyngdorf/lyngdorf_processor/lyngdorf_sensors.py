@@ -10,6 +10,6 @@ class LyngdorfSensors:
     decibels: int | None = None
     source: str | None = None
     sources: list[str] | None = None
-    power_status: str | None = None
+    is_on: bool | None = None
     mute_status: bool | None = None
     device_name: str | None = None

@@ -37,7 +37,7 @@ class LyngdorfProcessorMediaPlayer(MediaPlayerEntity):
     def __init__(self, lyngdorf_processor: LyngdorfMP) -> None:
         """Set up state."""
         self.lyngdorf_processor = lyngdorf_processor
-
+        self._attr_volume_step = 0.005
         # Lyngdorf does not send events when state changes - so need to poll
         self._attr_should_poll = True
 
@@ -49,6 +49,12 @@ class LyngdorfProcessorMediaPlayer(MediaPlayerEntity):
             | MediaPlayerEntityFeature.VOLUME_MUTE
             | MediaPlayerEntityFeature.SELECT_SOURCE
             | MediaPlayerEntityFeature.VOLUME_STEP
+            | MediaPlayerEntityFeature.PLAY
+            | MediaPlayerEntityFeature.NEXT_TRACK
+            | MediaPlayerEntityFeature.PREVIOUS_TRACK
+            | MediaPlayerEntityFeature.PAUSE
+            | MediaPlayerEntityFeature.TURN_ON
+            | MediaPlayerEntityFeature.TURN_OFF
         )
 
     def select_source(self, source: str) -> None:
@@ -66,6 +72,30 @@ class LyngdorfProcessorMediaPlayer(MediaPlayerEntity):
         _LOGGER.info("Setting db %d from volume %f", db, volume)
         self.lyngdorf_processor.set_decibels(db)
 
+    def media_play(self) -> None:
+        """Play/Pause."""
+        self.lyngdorf_processor.play_pause()
+
+    def media_pause(self) -> None:
+        """Play/Pause."""
+        self.lyngdorf_processor.play_pause()
+
+    def media_next_track(self) -> None:
+        """Next track."""
+        self.lyngdorf_processor.next()
+
+    def media_previous_track(self) -> None:
+        """Previous track."""
+        self.lyngdorf_processor.previous()
+
+    def turn_on(self) -> None:
+        """Turn processor on."""
+        self.lyngdorf_processor.turn_on()
+
+    def turn_off(self) -> None:
+        """Turn processor on."""
+        self.lyngdorf_processor.turn_off()
+
     def update(self) -> None:
         """Update latest state from processor."""
         current_state = self.lyngdorf_processor.get_state()
@@ -75,19 +105,20 @@ class LyngdorfProcessorMediaPlayer(MediaPlayerEntity):
         self._attr_name = current_state.device_name
         self._attr_source = current_state.source
         self._attr_source_list = current_state.sources
-        self._attr_volume_step = 0.005
-        self._attr_state = MediaPlayerState.ON
+        self._attr_state = (
+            MediaPlayerState.ON if current_state.is_on else MediaPlayerState.STANDBY
+        )
 
     @staticmethod
     def _volume_from_db(db: int) -> float:
-        """Given a decibel value, calculate a volume in the range (0...1)."""
-        _LOGGER.info("Received DB %f", db)
-        return (100 - (db / 10 * -1)) * 0.01
+        """Given a decibel value in the range (-999...0), calculate a volume in the range (0...1)."""
+        volume = (100 - (db / 10 * -1)) * 0.01
+        _LOGGER.info("Computed volume %f from db %d", volume, db)
+        return volume
 
     @staticmethod
     def _db_from_volume(volume: float) -> int:
-        """Given a volume value in the range (0...1), calculate a decibel value. 0db is maximum, -999 is minimum.  -250 is a normal value."""
-        unrounded = 10 * ((100 - (volume / 0.01)) * -1)
-        rounded = int(unrounded)
-        _LOGGER.info("Rounded %f to %d", unrounded, rounded)
-        return rounded
+        """Given a volume value in the range (0...1), calculate a decibel value in the range (-999...0)."""
+        db = int(10 * ((100 - (volume / 0.01)) * -1))
+        _LOGGER.info("Computed db %d from volume %f", db, volume)
+        return db

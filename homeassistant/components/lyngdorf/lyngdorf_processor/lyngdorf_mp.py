@@ -45,7 +45,7 @@ class LyngdorfMP:
 
     def _get_response(self):
         response = self._processor_socket.recv(1024).decode("utf-8").rstrip()
-        _LOGGER.info("Received response %s", response)
+        _LOGGER.info("Received response '%s'", response)
         return response
 
     def _get_socket(self):
@@ -55,16 +55,8 @@ class LyngdorfMP:
 
     def _command_with_response(self, command: str) -> str:
         with self._processor_lock:
-            _LOGGER.info("%s calling %s", threading.get_ident(), command)
             self._send_command(command)
-            response = self._get_response()
-            _LOGGER.info(
-                "%s called %s and got response %s",
-                threading.get_ident(),
-                command,
-                response,
-            )
-            return response
+            return self._get_response()
 
     def _command_without_response(self, command):
         with self._processor_lock:
@@ -156,16 +148,31 @@ class LyngdorfMP:
         _LOGGER.info("Source %s has index %d", source_name, source_index)
         self._command_without_response(f"!SRC({source_index})")
 
+    def play_pause(self) -> None:
+        """Press Play button."""
+        self._command_without_response("!PLAY")
+
+    def next(self) -> None:
+        """Press Next button."""
+        self._command_without_response("!NEXT")
+
+    def previous(self) -> None:
+        """Press Previous button."""
+        self._command_without_response("!PREV")
+
     def get_available_source_names(self) -> list[str]:
         """Get list of available sources."""
         # '!SRC(0)"SHIELD"\r!SRC(1)"PC"\r!SRC(2)"NOW TV"\r!SRC(3)"MUSIC"'
         number_of_available_sources = self._get_numeric_parameter_response("!SRCS?")
-        # switch to this string instead of multiple calls
-        # sources = self._get_response()
-        available_sources = [
-            self._get_source_name(i) for i in range(number_of_available_sources)
-        ]
-        _LOGGER.info("Found Sources %s", available_sources)
+        sources_string = self._get_response()
+        _LOGGER.info("Sources text list '%s'", sources_string)
+        available_sources = sources_string.split('"')[1::2]
+        _LOGGER.info(
+            "Found Sources %s.  Expected %d Actual %d",
+            available_sources,
+            number_of_available_sources,
+            len(available_sources),
+        )
         return available_sources
 
     def get_device_name(self) -> str:
@@ -183,7 +190,7 @@ class LyngdorfMP:
             decibels=self.get_decibels(),
             source=self.get_current_source_name(),
             sources=self.get_available_source_names(),
-            power_status=self.get_power_status(),
+            is_on=self.is_on(),
             mute_status=self.get_is_mute(),
             device_name=self.get_device_name(),
         )
